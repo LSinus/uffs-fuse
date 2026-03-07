@@ -331,6 +331,7 @@ static uffs_Device g_dev = {0};
 #define FL512S_PAGE_SPARE_SIZE  16
 #define FL512S_PAGE_DATA_SIZE   (SPN_FL512S_PAGE_SIZE - FL512S_PAGE_SPARE_SIZE)
 #define FL512S_BLOCK_ST_OFFSET  4
+#define MOUNT_POINT "/flash0/"
 
 static void setup_storage(struct uffs_StorageAttrSt *attr)
 {
@@ -359,7 +360,7 @@ static void setup_emu_private(uffs_FileEmu *emu, const char *emu_filename)
 
 static int init_uffs() {
 
-	mtbl.mount = "/flash0/";
+	mtbl.mount = MOUNT_POINT;
 	mtbl.start_block = 0;
 	mtbl.end_block = FL512S_TOTAL_BLOCKS - 1;
     mtbl.dev = &g_dev;
@@ -373,31 +374,19 @@ static int init_uffs() {
     uffs_RegisterMountTable(&mtbl);
     uffs_Mount(mtbl.mount);
 
-    fprintf(stderr, "data_layout: ");
     const u8 *p = mtbl.dev->attr->data_layout;
     while(p && *p != 0xFF) { fprintf(stderr, "%d+%d ", p[0], p[1]); p+=2; }
-    fprintf(stderr, "\n");
-    fprintf(stderr, "ecc_layout: ");
     p = mtbl.dev->attr->ecc_layout;
     while(p && *p != 0xFF) { fprintf(stderr, "%d+%d ", p[0], p[1]); p+=2; }
-    fprintf(stderr, "\n");
-    fprintf(stderr, "block_status_offs: %d\n", mtbl.dev->attr->block_status_offs);
-    fprintf(stderr, "spare_data_size: %d\n", mtbl.dev->mem.spare_data_size);
 
-        //return uffs_InitFileSystemObjects() == U_SUCC ? 0 : -1;
     uffs_InitFileSystemObjects();
-    struct uffs_dirSt *r = uffs_opendir("/flash0/file_controller/");
-    printf("opendir ptr is %p\n", r);
     return 0;
 }
 
 int main(int argc, char *argv[]) {
     uffs_SetupDebugOutput();
-    printf("struct uffs_TagsSt is %zu\n", sizeof(struct uffs_TagsSt));
-    printf("struct uffs_TagStoreSt is %zu\n", sizeof(struct uffs_TagStoreSt));
 
     if (argc < 3) {
-        fprintf(stderr, "Usage: %s <flash.img> <mountpoint> [fuse opts]\n", argv[0]);
         return 1;
     }
 
@@ -414,14 +403,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to mount UFFS image\n");
         return 1;
     }
-
-
-    fprintf(stderr, "g_dev.attr = %p\n",        mtbl.dev->attr);
-    fprintf(stderr, "g_dev.ops  = %p\n",        mtbl.dev->ops);
-    fprintf(stderr, "emu_filename: %s\n",       femu_GetPrivate()->emu_filename);
-    fprintf(stderr, "total_blocks: %d\n",       mtbl.dev->attr->total_blocks);
-    fprintf(stderr, "page_data_size: %d\n",     mtbl.dev->attr->page_data_size);
-    fprintf(stderr, "pages_per_block: %d\n",    mtbl.dev->attr->pages_per_block);
 
     return fuse_main(argc, argv, &uf_ops, NULL);
 }
