@@ -48,12 +48,6 @@
 extern "C"{
 #endif
 
-#define HOST_LITTLE_ENDIAN 1
-#define UFFS_BIG_ENDIAN   1 
-
-
-
-//#define UFFS_LITTLE_ENDIAN    1
     
 #ifndef ARRAY_SIZE
 # define ARRAY_SIZE(ar) (sizeof(ar) / sizeof(ar[0]))
