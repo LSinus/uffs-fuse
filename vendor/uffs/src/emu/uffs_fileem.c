@@ -49,43 +49,54 @@
 #define MSG(msg,...) uffs_PerrorRaw(UFFS_MSG_NORMAL, msg, ## __VA_ARGS__)
 #define MSGLN(msg,...) uffs_Perror(UFFS_MSG_NORMAL, msg, ## __VA_ARGS__)
 
-
-static struct uffs_StorageAttrSt g_femu_storage = {0};
-
-static struct uffs_FileEmuSt g_femu_private = {0};
-
-
 struct uffs_StorageAttrSt * femu_GetStorage()
 {
-	return &g_femu_storage;
+    struct uffs_StorageAttrSt *femu_storage = malloc(sizeof(*femu_storage));
+
+    if (!femu_storage) {
+        fprintf(stderr, "Error allocating uffs emulator storage\n");
+        exit(-1);
+    }
+    return femu_storage;
 }
 
 struct uffs_FileEmuSt *femu_GetPrivate()
 {
-	return &g_femu_private;
+    struct uffs_FileEmuSt *femu_private = malloc(sizeof(*femu_private));
+
+    if (!femu_private) {
+        fprintf(stderr, "Error allocating uffs emulator private data\n");
+        exit(-1);
+    }
+
+	return femu_private;
 }
 
 URET femu_InitDevice(uffs_Device *dev)
 {
 	uffs_FileEmu *emu = femu_GetPrivate();
+    emu->emu_filename = dev->_private;
 
-	// setup device storage attr and private data structure.
-	// all femu partition share one storage attribute
-
-	dev->attr = femu_GetStorage();
-	dev->attr->_private = (void *) emu;
+	dev->attr->_private = (void *)emu;
 
 	// setup flash driver operations, according to the ecc option.
+    dev->ops = malloc(sizeof(uffs_FlashOps));
+
+    if (!dev->ops) {
+        fprintf(stderr, "Error allocating ops");
+        exit(1);
+    }
+
 	switch(dev->attr->ecc_opt) {
 		case UFFS_ECC_NONE:
 		case UFFS_ECC_SOFT:
-			dev->ops = &g_femu_ops_ecc_soft;
+			memcpy(dev->ops, &g_femu_ops_ecc_soft, sizeof(uffs_FlashOps));
 			break;
 		case UFFS_ECC_HW:
-			dev->ops = &g_femu_ops_ecc_hw;
+			memcpy(dev->ops, &g_femu_ops_ecc_hw, sizeof(uffs_FlashOps));
 			break;
 		case UFFS_ECC_HW_AUTO:
-			dev->ops = &g_femu_ops_ecc_hw_auto;
+			memcpy(dev->ops, &g_femu_ops_ecc_hw_auto, sizeof(uffs_FlashOps));
 			break;
 		default:
 			break;
@@ -106,6 +117,8 @@ URET femu_InitDevice(uffs_Device *dev)
 /* Nothing to do here */
 URET femu_ReleaseDevice(uffs_Device *dev)
 {
+    free(dev->attr->_private);
+    free(dev->attr);
 	return U_SUCC;
 }
 

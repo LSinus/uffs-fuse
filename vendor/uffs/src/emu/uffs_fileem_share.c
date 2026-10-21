@@ -54,7 +54,7 @@
 /*                                                              */
 /****************************************************************/
 
-static u8 g_page_buf[UFFS_MAX_PAGE_SIZE + UFFS_MAX_SPARE_SIZE];
+//static u8 g_page_buf[UFFS_MAX_PAGE_SIZE + UFFS_MAX_SPARE_SIZE];
 
 /*
  * Create emulator disk, initialise monitors, inject manufacture bad blocks, etc.
@@ -124,7 +124,12 @@ int femu_EraseBlock(uffs_Device *dev, u32 blockNumber)
 {
 
 	int i;
-	u8 * pg = g_page_buf;
+	u8 * pg = malloc(UFFS_MAX_PAGE_SIZE + UFFS_MAX_SPARE_SIZE);
+    if (!pg) {
+        fprintf(stderr, "Error allocating pg\n");
+        exit(1);
+    }
+
 	int pgd_size, sp_size, blks, blk_pgs;
 	uffs_FileEmu *emu;
 	emu = (uffs_FileEmu *)(dev->attr->_private);
